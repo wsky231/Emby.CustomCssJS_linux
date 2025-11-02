@@ -95,23 +95,22 @@ inject_app_js() {
 
   backup_app
 
-  # 在 Promise.all(list.map(loadPlugin)) 之前插入：
-  # list.push("./modules/CustomCssJS.js"),
-  #
-  # 用 sed 将匹配文本替换为：list.push(...),<原文本>
-  # 注意：& 代表被匹配到的原文本
-  local pattern='Promise\.all(list\.map(loadPlugin))'
-  local insert='list.push("./modules/CustomCssJS.js"),'
-  if grep -qE "$pattern" "$APP_JS"; then
-    sudo sed -i "s/$pattern/$insert&/" "$APP_JS"
-    # 验证
-    if already_injected; then
-      log "app.js 注入成功"
-    else
-      die "注入后未检测到 CustomCssJS.js，请手动检查 $APP_JS"
-    fi
+  # 允许空白的更稳健匹配
+  local pattern_ere='Promise[[:space:]]*\.all\([[:space:]]*list[[:space:]]*\.map\([[:space:]]*loadPlugin[[:space:]]*\)[[:space:]]*\)'
+
+  if grep -qE "$pattern_ere" "$APP_JS"; then
+    # 用 | 作分隔符，\0 回带原匹配
+    sudo sed -E -i 's|'"$pattern_ere"'|list.push("./modules/CustomCssJS.js"),\0|' "$APP_JS"
   else
-    die "未在 app.js 中找到目标锚点：Promise.all(list.map(loadPlugin))"
+    warn "未找到主锚点，尝试在 var list=[ ... ] 中兜底注入"
+    # 只在第一次出现的 var list=[ 后面插入
+    sudo sed -E -i '0,/(var[[:space:]]+list[[:space:]]*=\[)/s//\1".\/modules\/CustomCssJS.js",/' "$APP_JS"
+  fi
+
+  if already_injected; then
+    log "app.js 注入成功"
+  else
+    die "注入后仍未检测到 CustomCssJS.js，请手动检查 $APP_JS"
   fi
 }
 
