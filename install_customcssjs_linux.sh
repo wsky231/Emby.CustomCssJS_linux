@@ -58,7 +58,7 @@ backup_app() {
 install_plugin() {
   local target="$PLUGINS_DIR/Emby.CustomCssJS.dll"
   if [[ -f "$target" ]]; then
-    log "插件已存在: $target（跳过下载）"
+    log "插件已存在: $target"
   else
     local tmp
     tmp="$(mktemp)"
