@@ -10,8 +10,8 @@ APP_JS="$UI_DIR/app.js"
 BAK_DIR="$UI_DIR/bak"
 
 # 源文件 URL（来自原脚本的同一仓库）
-PLUGIN_URL="https://raw.githubusercontent.com/Nebulas0/Emby.CustomCssJS/main/src/Emby.CustomCssJS.dll"
-JS_URL="https://raw.githubusercontent.com/Nebulas0/Emby.CustomCssJS/main/src/CustomCssJS.js"
+PLUGIN_URL="https://raw.githubusercontent.com/Shurelol/Emby.CustomCssJS/main/src/Emby.CustomCssJS.dll"
+JS_URL="https://raw.githubusercontent.com/Shurelol/Emby.CustomCssJS/main/src/CustomCssJS.js"
 
 # 日志与错误
 log() { echo -e "[INFO] $*"; }
