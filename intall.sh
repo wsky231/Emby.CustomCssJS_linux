@@ -22,27 +22,6 @@ need_cmd() {
   command -v "$1" >/dev/null 2>&1 || die "缺少依赖命令: $1"
 }
 
-# 交互式确认（优先从 /dev/tty 读取，避免管道导致无法交互）
-ask_yes_no() {
-  # usage: ask_yes_no "提示语 [y/N]: " [默认N]
-  local prompt="$1" default="${2:-N}" reply=""
-  if [[ -r /dev/tty ]]; then
-    # 从控制终端读取，确保即便脚本通过管道执行仍可交互
-    read -r -p "$prompt" reply < /dev/tty || true
-  else
-    # 非交互环境（如 cron/无 tty），保持空回复以走默认
-    reply=""
-  fi
-  if [[ -z "$reply" ]]; then
-    reply="$default"
-  fi
-  if [[ "$reply" =~ ^([yY]|[yY][eE][sS])$ ]]; then
-    return 0
-  else
-    return 1
-  fi
-}
-
 download() {
   # usage: download <url> <out_path>
   local url="$1" out="$2"
@@ -78,29 +57,21 @@ backup_app() {
 
 install_plugin() {
   local target="$PLUGINS_DIR/Emby.CustomCssJS.dll"
-  if [[ -f "$target" ]]; then
-    log "检测到已存在插件: $target"
-    # 支持通过环境变量强制覆盖；否则尝试交互式确认
-    if [[ "${FORCE_OVERWRITE:-}" =~ ^(1|y|Y|yes|YES|true|TRUE)$ ]]; then
-      log "检测到 FORCE_OVERWRITE，执行覆盖安装。"
-    else
-      if ask_yes_no "是否覆盖安装? [y/N]: " "N"; then
-        log "确认覆盖安装。"
-      else
-        log "已取消覆盖，跳过插件安装。"
-        return 0
-      fi
-    fi
-  fi
-
   local tmp
   tmp="$(mktemp)"
+
+  if [[ -f "$target" ]]; then
+    log "检测到已存在插件，执行覆盖安装: $target"
+  else
+    log "安装插件: $target"
+  fi
+
   log "下载插件 DLL..."
   download "$PLUGIN_URL" "$tmp"
   sudo cp -f "$tmp" "$target"
-  sudo chmod 755 "$target"
+  sudo chmod 755 "$target" || true
   rm -f "$tmp"
-  log "插件已安装: $target"
+  log "插件已覆盖安装: $target"
 }
 
 install_module_js() {
@@ -177,8 +148,6 @@ usage() {
 - app.js 路径:    $APP_JS
 - 备份目录:       $BAK_DIR
 - 需要具有对 /opt 目录的写权限（必要时用 sudo 运行）
- - 如检测到插件已存在，将提示是否覆盖安装（默认否）
- - 非交互场景（如通过管道执行且无 /dev/tty）默认不覆盖，可设置环境变量 FORCE_OVERWRITE=y 强制覆盖
 EOF
 }
 
