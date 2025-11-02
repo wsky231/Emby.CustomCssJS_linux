@@ -58,17 +58,23 @@ backup_app() {
 install_plugin() {
   local target="$PLUGINS_DIR/Emby.CustomCssJS.dll"
   if [[ -f "$target" ]]; then
-    log "插件已存在: $target"
-  else
-    local tmp
-    tmp="$(mktemp)"
-    log "下载插件 DLL..."
-    download "$PLUGIN_URL" "$tmp"
-    sudo cp -f "$tmp" "$target"
-    sudo chmod 755 "$target"
-    rm -f "$tmp"
-    log "插件已安装: $target"
+    log "检测到已存在插件: $target"
+    local ans
+    read -r -p "是否覆盖安装? [y/N]: " ans || true
+    if [[ ! "$ans" =~ ^([yY]|[yY][eE][sS])$ ]]; then
+      log "已取消覆盖，跳过插件安装。"
+      return 0
+    fi
   fi
+
+  local tmp
+  tmp="$(mktemp)"
+  log "下载插件 DLL..."
+  download "$PLUGIN_URL" "$tmp"
+  sudo cp -f "$tmp" "$target"
+  sudo chmod 755 "$target"
+  rm -f "$tmp"
+  log "插件已安装: $target"
 }
 
 install_module_js() {
@@ -145,6 +151,7 @@ usage() {
 - app.js 路径:    $APP_JS
 - 备份目录:       $BAK_DIR
 - 需要具有对 /opt 目录的写权限（必要时用 sudo 运行）
+ - 如检测到插件已存在，将提示是否覆盖安装（默认否）
 EOF
 }
 
